@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grid Tool – Konstlabbet</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #faf8f3;
+    --warm-white: #fff9f2;
+    --brown-dark: #2c1f10;
+    --brown-mid: #6b4c2a;
+    --brown-light: #c4a882;
+    --ochre: #c07d2b;
+    --ochre-light: #f0e0c0;
+    --border: #ddd0bc;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(44,31,16,0.10);
+  }
+
+  body {
+    background: var(--cream);
+    font-family: 'Lato', sans-serif;
+    color: var(--brown-dark);
+    min-height: 100vh;
+    padding: 0 0 3rem;
+  }
+
+  header {
+    background: var(--brown-dark);
+    padding: 1.2rem 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    color: var(--ochre-light);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  header span {
+    font-size: 0.8rem;
+    color: var(--brown-light);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+  }
+
+  .upload-zone {
+    border: 2px dashed var(--brown-light);
+    border-radius: var(--radius);
+    background: var(--warm-white);
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--ochre);
+    background: var(--ochre-light);
+  }
+  .upload-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon {
+    width: 48px; height: 48px;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    background: var(--ochre-light);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .upload-icon svg { width: 24px; height: 24px; fill: var(--ochre); }
+  .upload-zone p { color: var(--brown-mid); font-size: 0.95rem; line-height: 1.6; }
+  .upload-zone strong { color: var(--brown-dark); font-weight: 700; }
+
+  .controls {
+    display: none;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.2rem;
+  }
+  .controls.visible { display: flex; }
+
+  .ctrl-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .ctrl-label {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--brown-mid);
+    font-weight: 700;
+    min-width: 130px;
+  }
+
+  .btn-group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .btn-lines {
+    padding: 0.4rem 1.1rem;
+    border: 1.5px solid var(--border);
+    border-radius: 30px;
+    background: var(--warm-white);
+    color: var(--brown-mid);
+    font-family: 'Lato', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-lines:hover { border-color: var(--ochre); color: var(--ochre); }
+  .btn-lines.active {
+    background: var(--brown-dark);
+    border-color: var(--brown-dark);
+    color: var(--ochre-light);
+  }
+
+  .toggle-wrap { display: flex; align-items: center; gap: 0.6rem; }
+  .toggle {
+    position: relative; width: 46px; height: 26px;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider-toggle {
+    position: absolute; inset: 0;
+    background: var(--border);
+    border-radius: 26px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .slider-toggle::before {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    left: 3px; top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .toggle input:checked + .slider-toggle { background: var(--ochre); }
+  .toggle input:checked + .slider-toggle::before { transform: translateX(20px); }
+  .toggle-label { font-size: 0.88rem; color: var(--brown-mid); }
+
+  .color-wrap { display: flex; align-items: center; gap: 0.8rem; }
+  input[type="color"] {
+    width: 38px; height: 38px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    background: none;
+    padding: 2px;
+  }
+  .opacity-wrap { display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 180px; }
+  input[type="range"] {
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    outline: none;
+    flex: 1;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    background: var(--ochre);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .opacity-val { font-size: 0.85rem; color: var(--brown-mid); min-width: 30px; }
+
+  .canvas-wrap {
+    display: none;
+    margin-top: 1rem;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    background: #888;
+    position: relative;
+  }
+  .canvas-wrap.visible { display: block; }
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+    object-fit: contain;
+  }
+
+  .info-bar {
+    display: none;
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    color: var(--brown-mid);
+    padding: 0.4rem 0.6rem;
+    background: var(--ochre-light);
+    border-radius: 6px;
+    border-left: 3px solid var(--ochre);
+  }
+  .info-bar.visible { display: block; }
+
+  .btn-download {
+    display: none;
+    margin-top: 1rem;
+    width: 100%;
+    padding: 0.85rem;
+    background: var(--brown-dark);
+    color: var(--ochre-light);
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'Lato', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-download:hover { background: var(--ochre); color: var(--brown-dark); }
+  .btn-download.visible { display: block; }
+
+  .btn-new {
+    display: none;
+    margin-top: 0.6rem;
+    width: 100%;
+    padding: 0.65rem;
+    background: transparent;
+    color: var(--brown-mid);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'Lato', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-new:hover { border-color: var(--ochre); color: var(--ochre); }
+  .btn-new.visible { display: block; }
+
+  footer {
+    text-align: center;
+    margin-top: 2.5rem;
+    font-size: 0.78rem;
+    color: var(--brown-light);
+    letter-spacing: 0.05em;
+  }
+  footer a { color: var(--ochre); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 520px) {
+    .ctrl-label { min-width: 100%; margin-bottom: 0.1rem; }
+    .ctrl-row { gap: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Grid Tool</h1>
+  <span>Konstlabbet · akvarellskiss.se</span>
+</header>
+
+<div class="container">
+
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept="image/*">
+    <div class="upload-icon">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+    </div>
+    <p><strong>Click or drag your image here</strong><br>JPG, PNG, WEBP · any size</p>
+  </div>
+
+  <div class="controls" id="controls">
+
+    <div class="ctrl-row">
+      <span class="ctrl-label">Grid lines</span>
+      <div class="btn-group" id="linesGroup">
+        <button class="btn-lines" data-val="5">5</button>
+        <button class="btn-lines active" data-val="10">10</button>
+        <button class="btn-lines" data-val="20">20</button>
+      </div>
+    </div>
+
+    <div class="ctrl-row">
+      <span class="ctrl-label">Square grid</span>
+      <div class="toggle-wrap">
+        <label class="toggle">
+          <input type="checkbox" id="squareToggle">
+          <span class="slider-toggle"></span>
+        </label>
+        <span class="toggle-label">Automatically adjust so all cells are square</span>
+      </div>
+    </div>
+
+    <div class="ctrl-row">
+      <span class="ctrl-label">Line color</span>
+      <div class="color-wrap">
+        <input type="color" id="colorPicker" value="#ff0000">
+        <div class="opacity-wrap">
+          <span style="font-size:0.82rem;color:var(--brown-mid)">Opacity</span>
+          <input type="range" id="opacitySlider" min="5" max="100" value="70" step="5">
+          <span class="opacity-val" id="opacityVal">70%</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="info-bar" id="infoBar"></div>
+
+  <div class="canvas-wrap" id="canvasWrap">
+    <canvas id="gridCanvas"></canvas>
+  </div>
+
+  <button class="btn-download" id="btnDownload">⬇ Download image with grid</button>
+  <button class="btn-new" id="btnNew">Upload new image</button>
+
+</div>
+
+<footer>
+  <a href="https://www.akvarellskiss.se" target="_blank">akvarellskiss.se</a> · Konstlabbet
+</footer>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const uploadZone = document.getElementById('uploadZone');
+const controls = document.getElementById('controls');
+const canvasWrap = document.getElementById('canvasWrap');
+const canvas = document.getElementById('gridCanvas');
+const ctx = canvas.getContext('2d');
+const btnDownload = document.getElementById('btnDownload');
+const btnNew = document.getElementById('btnNew');
+const infoBar = document.getElementById('infoBar');
+const colorPicker = document.getElementById('colorPicker');
+const opacitySlider = document.getElementById('opacitySlider');
+const opacityVal = document.getElementById('opacityVal');
+const squareToggle = document.getElementById('squareToggle');
+
+let img = null;
+let numLines = 10;
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadImage(file);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) loadImage(e.target.files[0]); });
+
+document.querySelectorAll('.btn-lines').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.btn-lines').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    numLines = parseInt(btn.dataset.val);
+    if (img) drawGrid();
+  });
+});
+
+squareToggle.addEventListener('change', () => { if (img) drawGrid(); });
+colorPicker.addEventListener('input', () => { if (img) drawGrid(); });
+opacitySlider.addEventListener('input', () => {
+  opacityVal.textContent = opacitySlider.value + '%';
+  if (img) drawGrid();
+});
+
+function loadImage(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    img = new Image();
+    img.onload = () => {
+      uploadZone.style.display = 'none';
+      controls.classList.add('visible');
+      canvasWrap.classList.add('visible');
+      btnDownload.classList.add('visible');
+      btnNew.classList.add('visible');
+      drawGrid();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
+function drawGrid() {
+  const W = img.naturalWidth;
+  const H = img.naturalHeight;
+  const square = squareToggle.checked;
+
+  let cols, rows;
+  if (square) {
+    const cellSize = W / numLines;
+    cols = numLines;
+    rows = Math.round(H / cellSize);
+  } else {
+    cols = numLines;
+    rows = numLines;
+  }
+
+  const MARGIN = 28;
+  canvas.width = W + MARGIN;
+  canvas.height = H + MARGIN;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#f5f5f5';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.drawImage(img, MARGIN, MARGIN, W, H);
+
+  const alpha = parseInt(opacitySlider.value) / 100;
+  const rgb = hexToRgb(colorPicker.value);
+  ctx.strokeStyle = `rgba(${rgb},${alpha})`;
+  ctx.lineWidth = Math.max(1, W / 600);
+  ctx.font = `${Math.max(10, Math.min(14, MARGIN * 0.55))}px Lato, sans-serif`;
+  ctx.fillStyle = `rgba(${rgb},${Math.min(1, alpha + 0.2)})`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  for (let c = 0; c <= cols; c++) {
+    const x = MARGIN + Math.round(c * W / cols);
+    ctx.beginPath();
+    ctx.moveTo(x, MARGIN);
+    ctx.lineTo(x, MARGIN + H);
+    ctx.stroke();
+    if (c < cols) {
+      ctx.fillText(c + 1, MARGIN + (c + 0.5) * W / cols, MARGIN * 0.5);
+    }
+  }
+
+  for (let r = 0; r <= rows; r++) {
+    const y = MARGIN + Math.round(r * H / rows);
+    ctx.beginPath();
+    ctx.moveTo(MARGIN, y);
+    ctx.lineTo(MARGIN + W, y);
+    ctx.stroke();
+    if (r < rows) {
+      ctx.textAlign = 'center';
+      ctx.fillText(r + 1, MARGIN * 0.5, MARGIN + (r + 0.5) * H / rows);
+    }
+  }
+
+  infoBar.textContent = `Grid: ${cols} columns × ${rows} rows${square ? ' (square cells)' : ''} · Original size: ${W}×${H}px`;
+  infoBar.classList.add('visible');
+}
+
+btnDownload.addEventListener('click', () => {
+  const link = document.createElement('a');
+  link.download = 'grid-image.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+});
+
+btnNew.addEventListener('click', () => {
+  img = null;
+  fileInput.value = '';
+  uploadZone.style.display = '';
+  controls.classList.remove('visible');
+  canvasWrap.classList.remove('visible');
+  btnDownload.classList.remove('visible');
+  btnNew.classList.remove('visible');
+  infoBar.classList.remove('visible');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+});
+</script>
+</body>
+</html>
